@@ -1,0 +1,47 @@
+.bc-day{
+  display: inline-block;
+  width: 50px;
+  text-align: center;
+  border-right:1px solid #eee;
+  margin-top:10px;
+
+  padding:5px;
+  cursor:pointer;
+  background: #fff;
+  color: #00695c;
+  -webkit-transition: all .4s ease;
+  -moz-transition: all .4s ease;
+  -ms-transition: all .4s ease;
+  -o-transition: all .4s ease;
+  transition: all .4s ease;
+  
+}
+
+.bc-day-disabled{
+  background: #fff;
+  color: #ddd;
+  display: inline-block;
+  width: 50px;
+  text-align: center;    
+  border-right:1px solid #eee;
+  margin-top:10px;
+  padding:5px;
+}
+
+.bc-day-name{
+    font-size:10px;
+    font-weight:bold;
+}
+
+.bc-day-num{
+}
+
+.bc-day:hover{
+    background: #00695c!important;
+    color: #fff!important;
+    -webkit-transition: all .4s ease;
+    -moz-transition: all .4s ease;
+    -ms-transition: all .4s ease;
+    -o-transition: all .4s ease;
+    transition: all .4s ease;
+}

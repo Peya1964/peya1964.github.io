@@ -1,0 +1,11 @@
+name = Simple Booking RCT
+description = Simple Booking system. 
+core = 7.x
+
+dependencies[] = date
+
+files[] = tests/example.test
+styles[] = simple_booking.css
+scripts[] = simple_booking.js
+
+configure = admin/config/simple_booking/config

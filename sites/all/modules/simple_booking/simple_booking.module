@@ -1,0 +1,645 @@
+<?php
+
+
+function simple_booking_help($path, $arg) {
+
+
+}
+
+function simple_booking_menu() {
+
+  $items['admin/config/simple_booking'] = array(
+    'page callback' => 'simple_booking_admin_page',
+    'access arguments' => array('administer site configuration'),
+    'title' => 'Simple Booking Settings',
+  );
+
+  $items['admin/config/simple_booking/config'] = array(
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('simple_booking_config_form'),
+      'title' => 'Simple Booking Config',
+      'access arguments' => array('administer site configuration'),
+  );
+ 
+  $items['booking/%'] = array(
+       'page callback' => 'simple_booking_res_page',
+       'page arguments' => array(1),
+       'access arguments' => array('access content'),
+  );
+
+  $items['booking/save'] = array(
+       'page callback' => 'simple_booking_res_form_submit',
+       'access arguments' => array('access content'),
+  );
+
+  $items['booking/cal/%/%'] = array(
+       'page callback' => 'simple_booking_cal',
+       'page arguments' => array(2,3),
+       'access arguments' => array('access content'),
+  );
+
+  return $items;
+
+}
+
+
+
+function simple_booking_config_form($form, &$form_state) {
+
+  $form['global'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Global settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+
+  );
+
+
+//  $form['global']['sbs_start'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('Start date of bookings'),
+//    '#default_value' => variable_get('sbs_start', ''),
+//    '#description' => "Format: 01-01 MM-DD - Leave blank, to disable.",
+//  );
+
+
+//  $form['global']['sbs_end'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('Start date of bookings'),
+//    '#default_value' => variable_get('sbs_end', ''),
+//    '#description' => "Format: 05-01 MM-DD - Leave blank, to disable.",
+//  );
+
+
+
+  $form['global']['sbs_min_days_in_future'] = array(
+    '#type' => 'textfield',
+    '#title' => t('A foglalás elötti minimum napok száma'),
+    '#default_value' => variable_get('sbs_min_days_in_future', '2'),
+    '#description' => "A mai naptól számítva hány napig nem lehet már foglalni.",
+  );
+
+  $form['global']['sbs_price_1'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ár 1 fő esetén'),
+    '#default_value' => variable_get('sbs_price_1', '7900'),
+    '#description' => "Ft / fő",
+  );
+  $form['global']['sbs_price_2'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ár 2 fő esetén'),
+    '#default_value' => variable_get('sbs_price_2', '3950'),
+    '#description' => "Ft / fő",
+  );
+  $form['global']['sbs_price_3'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ár 3 fő esetén'),
+    '#default_value' => variable_get('sbs_price_3', '3850'),
+    '#description' => "Ft / fő",
+  );
+  $form['global']['sbs_price_4'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ár 4 fő esetén'),
+    '#default_value' => variable_get('sbs_price_4', '3750'),
+    '#description' => "Ft / fő",
+  );
+  $form['global']['sbs_price_5'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ár 5 fő esetén'),
+    '#default_value' => variable_get('sbs_price_5', '3600'),
+    '#description' => "Ft / fő",
+  );
+
+  $form['global']['sbs_price_6'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ár 6/6+fő esetén'),
+    '#default_value' => variable_get('sbs_price_6', '3300'),
+    '#description' => "Ft / fő",
+  );
+
+  $form['global']['sbs_price_child_disc'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Gyerekkedvezmény'),
+    '#default_value' => variable_get('sbs_price_child_disc', '800'),
+    '#description' => "Ft / fő A normál árbol levonásra kerülő összeg.",
+  );
+
+/*var price_per_person = [ 0,7900,3950,3850,3750,3600,3300 ];*/
+
+  return system_settings_form($form);
+
+}
+
+
+
+
+
+function simple_booking_block_info() {
+  $blocks = array();
+  $blocks['simple_booking_booking_block'] = array(
+    'info' => t('Booking block'),
+  );
+  return $blocks;
+}
+
+
+
+function simple_booking_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'simple_booking_booking_block':
+      $block['subject'] = '';
+      $block['content'] = simple_booking_booking_block();
+      break;
+  }
+  return $block;
+}
+
+function simple_booking_booking_block() {
+  $output = simple_booking_res_page();
+  return $output;
+}
+
+function simple_booking_cal($arg1,$arg2){
+    print_r(simple_booking_draw_calendar2($arg1,$arg2));
+}
+
+function simple_booking_draw_calendar2($year,$month){
+    if($cached = cache_get('sbs'.$year.$month, 'cache'))  {
+	$body = $cached->data;
+    }
+    if(empty($body)) {
+
+
+    $day_count=cal_days_in_month(CAL_GREGORIAN,$month,$year)+1;
+    $min_days = variable_get('sbs_min_days_in_future', '5');
+    $body = '';
+    $footer = '';
+    $body .= '<div id="cal-'.$year.'-'.$month.'" class="sbs-cal-tab-wrapper">';
+    $body .= '<h3>'.format_date( strtotime($year.'-'.$month.'-01'), 'custom', 'Y. F').'</h3>';
+    $body .= '<div class="bc-month">';
+        for ($i=1;$i<$day_count;$i++){
+            $cdate = strtotime($year.'-'.$month.'-'.$i);
+            if ( ($cdate) <= (strtotime('now+'.$min_days.'days') )){   
+                $body .= '<div class="bc-day-disabled">';
+            }else{
+		 	$p1 = variable_get('sbs_price_1', '7900');
+			$p2 = variable_get('sbs_price_2', '3950');
+			$p3 = variable_get('sbs_price_3', '3850');
+			$p4 = variable_get('sbs_price_4', '3750');
+			$p5 = variable_get('sbs_price_5', '3600');
+			$p6 = variable_get('sbs_price_6', '3300');
+			$pc = variable_get('sbs_price_child_disc', '800');
+                $body .= '<div class="bc-day" onclick="select_day(jQuery(this),'.$p1.','.$p2.','.$p3.','.$p4.','.$p5.','.$p6.','.$pc.');" sbs-date="'.date( 'Y-m-d', strtotime($year.'-'.$month.'-'.$i) ).'">';
+            }
+               $body .='<div class="bc-day-name">'.format_date( $cdate, 'medium', 'D').'</div>';
+               $body .='<div class="bc-aval">';
+                for ($j=0;$j<4;$j++){
+                    if ($j==0){$k=1;}
+                    if ($j==1){$k=2;}
+                    if ($j==2){$k=4;}
+                    if ($j==3){$k=3;}
+                    // cache enable
+                    if(0){
+                        if($cached = cache_get('sbs'.$cdate.'-'.$k, 'cache'))  {
+                            $res_state = $cached->data;
+				//print_r('sbs'.$cdate.'-'.$k.' : '.$cached->data.'<br/>');
+                        }
+                        if(empty($res_state)) {
+                            $res_state = simple_booking_check_state( $cdate ,$k);
+                        }
+                        cache_set('sbs'.$cdate.'-'.$k, $res_state, 'cache', time()+60*60); //1 hour
+                    }else{
+                        $res_state = simple_booking_check_state( $cdate ,$k);
+  			   //cache_clear_all();
+                    }
+
+                    if ($res_state==0){
+                        $body .= '<div class="mn-box mn-box-'.$k.' b-empty"></div>';
+                    }else if ($res_state==1){
+                        $body .= '<div class="mn-box mn-box-'.$k.' b-pending"></div>';
+                    }else if ($res_state==2){
+                        $body .= '<div class="mn-box mn-box-'.$k.' b-accepted"></div>';
+                    }
+
+                    if ($j==1){
+
+                        $body .= '<div class="clear" style="margin-top: -15px;"></div>';
+
+                    }
+
+                }
+
+               $body .='</div>';
+               $body .='<div class="bc-day-num">'.format_date( $cdate, 'medium', 'd').'</div>';            
+            $body .= '</div>';
+        }
+        $body .= '<div class="sbs-legend">';
+            $body .= '<div class="mn-legend b-empty"></div>'.t('Empty');
+            $body .= '<div class="mn-legend b-pending"></div>'.t('Reservation pending');
+            $body .= '<div class="mn-legend b-accepted"></div>'.t('Reserved');    
+        $body .= '</div>';
+
+    $body .= '</div>';
+    cache_set('sbs'.$year.$month, $body, 'cache', time()+60*60); //1 hour
+    }
+
+
+    $footer = '<br />';
+    return $body.$footer;
+
+}
+
+
+
+function simple_booking_check_state($date,$res){
+
+    // ret values 
+    // 0: empty
+    // 1: booked, pending
+    // 2: booked, accepted 
+    // res 1,2,3,4 - apartmans
+
+    $query = new EntityFieldQuery();
+
+    $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'foglalas')
+        ->fieldCondition('field_arrival', 'value', date('Y-m-d',$date), '<=', 1)
+        ->fieldCondition('field_departure', 'value', date('Y-m-d',$date), '>=', 1)
+        ->fieldCondition('field_apartman', 'value', array($res), 'IN')
+        ->fieldCondition('field_state', 'value', array(1,2), 'IN')
+        ->range(0, 1)
+        ->addMetaData('account', user_load(1));                         
+
+    $result = $query->execute();
+
+    if ($result){
+
+        $items_nids = array_keys($result['node']);
+
+        $res_count=count($items_nids);        
+        $node = node_load($items_nids[0]);
+     
+        if ($res_count>0){
+            return $node->field_state['und'][0]['value'];    
+        }else{
+            return 0;
+        }    
+    }else{
+        return 0;
+    }        
+    return 0;
+}
+
+
+
+function simple_booking_res_page($page=0){
+
+    global $user;
+    $out ="";
+
+    $sbs_s = variable_get('sbs_start', '');    
+    $sbs_e = variable_get('sbs_end', '');
+   
+//    $sbs_mc = variable_get('sbs_months_to_show', '3');
+//    if (($sbs_e == '')&&($sbs_s == '')){
+//        $out .="<div>";
+//        $out .="</div>";
+//    }
+
+    $min_days = variable_get('sbs_min_days_in_future', '5');   
+
+    $curMonth = date('n');
+    $curYear  = date('Y');
+
+    if ($curMonth == 12){
+        $firstDayNextMonth = time(0, 0, 0, 1, 1, $curYear+1);
+    }else{
+        $firstDayNextMonth = time(0, 0, 1, $curMonth+1, 1);
+    }
+
+    $daysTilNextMonth = ($firstDayNextMonth - time()) / 86400;
+
+    $em = 0;
+    if ( $min_days > $daysTilNextMonth ){
+        $em=1;
+    }    
+
+    $out .= '<ul id="sbs-calendar" >';
+        for ($i=0;$i<22;$i++){
+                $year = date('Y',strtotime('+'.($i+$em).' months'));
+                $month = date('m',strtotime('+'.($i+$em).' months'));
+                $out .= '<li>';
+                    $out .= '<button id="sbs-month-tab-'.$year.'-'.$month.'" class="sbs-month-selector use-ajax" onclick="sbs_load_cal(\''.$year.'-'.$month.'\');">';
+                        $out .= $year.'<br />';
+                        $out .= '<h4>'.format_date( strtotime('+'.($i+$em).' months') , 'custom', 'M').'</h4>';
+                    $out .= '</button>';
+                $out .= '</li>';   
+        }      
+
+    $out .= '</ul>';   
+    $out .= '<div id="sbs-calendar2" >'; 
+        for ($i=0;$i<22;$i++){
+            $year = date('Y',strtotime('+'.($i+$em).' months'));
+            $month = date('m',strtotime('+'.($i+$em).' months'));
+            $out .= '<div id="target-'.$year.'-'.$month.'" class="sbs-cal-body"></div>';    
+        }
+    $out .= '</div>';
+
+    $out .= '<div id="sbs-booking-form">';
+        $out .= '<form action="/booking/save" method="POST" onsubmit="return validateForm();">';
+            $out .= '<h3>'.t('Enter data').'<div class="sbs-booking-close" onclick="reset_sbs();"><i class="fa fa-times"></i></div></h3>';
+            $out .= '<div id="sbs-start-date">';
+                $out .= '<h4>'.t('Arrivals').'</h4>';
+                $out .= '<div id="sbs-start-date-value"></div>';    
+            $out .= '</div>';
+            $out .= '<div id="sbs-diff-date">';
+                $out .= '<h4>'.t('Nights').'</h4>';
+                $out .= '<div id="sbs-diff-date-value"></div>';    
+            $out .= '</div>';
+            $out .= '<div id="sbs-end-date">';
+                $out .= '<h4>'.t('Departure').'</h4>';
+                $out .= '<div id="sbs-end-date-value"></div>';
+            $out .= '</div>';
+		 	$p1 = variable_get('sbs_price_1', '7900');
+			$p2 = variable_get('sbs_price_2', '3950');
+			$p3 = variable_get('sbs_price_3', '3850');
+			$p4 = variable_get('sbs_price_4', '3750');
+			$p5 = variable_get('sbs_price_5', '3600');
+			$p6 = variable_get('sbs_price_6', '3300');
+			$pc = variable_get('sbs_price_child_disc', '800');
+            $out .= '<div class="hw">';
+                $out .= '<h4>'.t('Number of adults').'</h4>';
+                $out .= '<input type="text" name="sbs-person-count" id="sbs-person-count" onkeyup="sbs_calc_price('.$p1.','.$p2.','.$p3.','.$p4.','.$p5.','.$p6.','.$pc.')" />';
+            $out .= '</div>';
+         
+            $out .= '<div class="hw">';                
+                $out .= '<h4>'.t('Number of children (4-12 years)').'</h4>';
+                $out .= '<input type="text" name="sbs-child-count" id="sbs-child-count" onkeyup="sbs_calc_price('.$p1.','.$p2.','.$p3.','.$p4.','.$p5.','.$p6.','.$pc.')" />';
+            $out .= '</div>';
+            
+            $out .= '<div class="fw" id="sbs-price">';    
+                $out .= '<h4>'.t('Price').'</h4>';
+                $out .= '<div id="sbs-price-value"></div>';
+
+                $out .= '<small><a href="#prices">'.t('Informative prices. Additional expenses and allowances inform yourself about the prices section').'</a></small>';
+            $out .= '</div>';
+
+            $out .= '<div class="fw" id="sbs-error-wrapper">';
+                $out .= '<div class="sbs-error insuf-space">'.t('There are not enough beds. Please choose another date.').'</div>';
+                $out .= '<div class="sbs-error out-of-cap">'.t('The apartments each with 5 + 1 people can hold a total of 24 people.').'</div>';
+            $out .= '</div>';
+                
+            $out .= '<div class="fw" id="sbs-choose-apartman">';
+                $out .= '<h4><div class="sbs-info">'.t('Válasszon ').'<div class="sbs-info-value"></div>'.t(' apartmant.').'</div></h4>';
+                $out .= '<div onclick="select_ap(jQuery(this));" id="ap-1" class="sbs-ap"><i class="fa fa-home"></i><div class="sbs-ap-text">1 - '.t('north').'</div></div>';
+                $out .= '<div onclick="select_ap(jQuery(this));" id="ap-2" class="sbs-ap"><i class="fa fa-home"></i><div class="sbs-ap-text">2 - '.t('west').'</div></div>';
+                $out .= '<div onclick="select_ap(jQuery(this));" id="ap-3" class="sbs-ap"><i class="fa fa-home"></i><div class="sbs-ap-text">3 - '.t('south').'</div></div>';
+                $out .= '<div onclick="select_ap(jQuery(this));" id="ap-4" class="sbs-ap"><i class="fa fa-home"></i><div class="sbs-ap-text">4 - '.t('east').'</div></div>';
+            $out .= '</div>';
+                       
+            $out .= '<div id="sbs-send-booking">';
+                $out .= '<div class="tw">';
+                    $out .= '<h4>'.t('Name').'</h4>';
+                    $out .= '<input type="text" name="sbs-name" id="sbs-name" onchange="check_data();" />';
+                $out .= '</div>';
+                $out .= '<div class="tw">';
+                    $out .= '<h4>'.t('E-mail').'</h4>';
+                    $out .= '<input type="text" name="sbs-mail" id="sbs-mail" onchange="check_data();" />';
+                $out .= '</div>';            
+                $out .= '<div class="tw">';
+                    $out .= '<h4>'.t('Phone').'</h4>';
+                    $out .= '<input type="text" name="sbs-tel" id="sbs-tel" onkeyup="check_data();" />';
+                $out .= '</div>';
+    
+                $out .= '<div class="fw">';
+                    $out .= '<h4>'.t('Note').'</h4>';
+                    $out .= '<textarea name="sbs-note" id="sbs-note" ></textarea>';
+                $out .= '</div>';
+                $out .= '<div class="fw">';
+                    $out .= '<input type="hidden" name="sbs-arr" id="sbs-arr" />';
+                    $out .= '<input type="hidden" name="sbs-dep" id="sbs-dep" />';
+                    $out .= '<input type="hidden" name="sbs-pri" id="sbs-pri" />';
+                    
+                    $out .= '<input type="hidden" name="sbs-ap1" id="sbs-ap1" value="0" />';
+                    $out .= '<input type="hidden" name="sbs-ap2" id="sbs-ap2" value="0" />';
+                    $out .= '<input type="hidden" name="sbs-ap3" id="sbs-ap3" value="0" />';
+                    $out .= '<input type="hidden" name="sbs-ap4" id="sbs-ap4" value="0"/>';            
+                    $out .= '<button id="sbs-submit" class="inv-ghost-button" type="submit">'.t('Send reservation').'</button>';
+                $out .= '</div>';
+            $out .= '</div>';
+        $out .= '</div>';        
+    $out .= '</form>';
+        
+
+ return $out;
+
+}
+
+function validateDate($date, $format = 'Y-m-d'){
+    $d = DateTime::createFromFormat($format, $date);
+    return $d && $d->format($format) == $date;
+}
+
+function simple_booking_res_form_submit() {
+  
+    if (isset($_POST['sbs-name'])){
+
+        if ( isset($_POST['sbs-arr']) && ( $_POST['sbs-arr']=="" || !validateDate($_POST['sbs-arr']) ) ){
+          drupal_set_title('Hiba');
+          $output = "<br /><br /><h1>".t('An error occured, please try again!')."</h1><br /><br />";
+          return $output;
+        }
+
+        if ( isset($_POST['sbs-dep']) && ( $_POST['sbs-dep']=="" || !validateDate($_POST['sbs-arr']) ) ){
+          drupal_set_title('Hiba');
+          $output = "<br /><br /><h1>".t('An error occured, please try again!')."</h1><br /><br />";
+          return $output;
+        }
+
+        $output = "";
+       
+        $node = new stdClass();
+        $node->title = $_POST['sbs-name'];
+        $node->type = 'foglalas';
+   
+        node_object_prepare($node); // Sets some defaults. Invokes hook_prepare() and hook_node_prepare().
+    
+        $node->language = LANGUAGE_NONE; // Or e.g. 'en' if locale is enabled
+        $node->uid = '1'; 
+   
+        $def_tz = variable_get('date_default_timezone', '');
+   
+        $node->field_arrival[LANGUAGE_NONE][0] = array(
+              'value' => date('Y-m-d', strtotime($_POST['sbs-arr'])),
+              'timezone' => $def_tz,
+              'timezone_db' => $def_tz,
+        );
+
+        $node->field_departure[LANGUAGE_NONE][0] = array(
+              'value' => date('Y-m-d', strtotime($_POST['sbs-dep'])),
+              'timezone' => $def_tz,
+              'timezone_db' => $def_tz,
+        );       
+
+        $node->field_state[LANGUAGE_NONE][0]['value']=1;          
+        $node->field_e_mail[LANGUAGE_NONE][0]['value'] = $_POST['sbs-mail'];        
+        $node->field_telefon[LANGUAGE_NONE][0]['value'] = $_POST['sbs-tel'];       
+
+        $node->field_person_count[LANGUAGE_NONE][0]['value'] = $_POST['sbs-person-count'];
+        $node->field_gyerekek_szama[LANGUAGE_NONE][0]['value'] = $_POST['sbs-child-count'];       
+
+        $node->field_megjegyzes[LANGUAGE_NONE][0]['value'] = $_POST['sbs-note'];
+        $node->field_price[LANGUAGE_NONE][0]['value'] = $_POST['sbs-pri'];       
+
+        $aps;
+        if ($_POST['sbs-ap1']!=0){
+            $aps[]=1;
+        }
+
+        if ($_POST['sbs-ap2']!=0){
+            $aps[]=2;
+        }
+
+        if ($_POST['sbs-ap3']!=0){
+            $aps[]=3;
+        }
+
+        if ($_POST['sbs-ap4']!=0){
+            $aps[]=4;
+        }        
+
+        
+        $i=0;
+        foreach( $aps as $key => $value){
+            $node->field_apartman[LANGUAGE_NONE][$i]['value'] = $value;
+            $i++;    
+        }
+      
+        $node->status = 0; //(1 or 0): published or not
+        $node->promote = 0; //(1 or 0): promoted to front page
+        $node->comment = 0; // 0 = comments disabled, 1 = read only, 2 = read/write
+
+
+        $node = node_submit($node); // Prepare node for saving
+
+        node_save($node);
+
+        global $language ;
+
+        $lang_name = $language->language ;
+
+        $params['message'] = '<strong>Név:</strong> '.$_POST['sbs-name'].'<br />';
+
+        $params['message'] .= '<strong>E-mail cím:</strong> '.$_POST['sbs-mail'].'<br />';
+
+        $params['message'] .= '<strong>Telefon:</strong> '.$_POST['sbs-tel'].'<br /><br />';
+
+        $params['message'] .= '<strong>Használt nyelv:</strong> '.$lang_name.'<br /><br />';
+        $params['message'] .= '<strong>Érkezés dátuma:</strong> '.$_POST['sbs-arr'].'<br />';
+        $params['message'] .= '<strong>Távozás dátuma:</strong> '.$_POST['sbs-dep'].'<br />';
+        $params['message'] .= '<strong>Felnőttek száma:</strong> '.$_POST['sbs-person-count'].'<br />';
+        $params['message'] .= '<strong>Gyerekek száma:</strong> '.$_POST['sbs-child-count'].'<br />';
+        $params['message'] .= '<strong>Kalkulált ár:</strong> '.$_POST['sbs-pri'].'<br />';
+        $params['message'] .= '<strong>Megjegyzés:</strong> '.$_POST['sbs-note'].'<br />';
+        $params['message'] .= '<strong>Foglalni kívánt apartman:</strong> '.implode(', ',$aps).'<br /><br />';
+        
+        $params['message'] .= '<a href="http://doboskutvendeghaz.hu/node/'.$node->nid.'" target="_blank">Foglalás megtekintése</a><br /><br />';
+        
+        simple_booking_mail_send( variable_get('peya1964@gmail.com', ''),$params);
+        //simple_booking_mail_send( 'peya1964@gmail.com',$params);
+
+        drupal_set_message(t('Reservation sent.'));
+
+        drupal_set_title(t('Thanks for your reservation!'));
+
+        $output .= "<br /><h3 class='center'>".t('Our colleague will contact you to confirm the booking.')."</h3><br /><br />";        
+
+    }else{
+        drupal_set_title('Hiba');
+        $output = "<br /><br /><h1>".t('An error occured, please try again!')."</h1><br /><br />";
+    }
+
+    return $output;
+
+}
+
+
+
+function simple_booking_mail($key, &$message, $params) {
+
+
+
+
+
+  $options = array(
+
+    'langcode' => $message['language']->language,
+
+  );
+
+
+
+  switch ($key) {
+
+    case 'new_booking':
+
+      $message['subject'] = t('Új foglalás érkezett | @site-name', array('@site-name' => variable_get('site-name', '')), $options);
+
+      // Note that the message body is an array, not a string.
+
+      $message['body'][] = t('<strong>Kedves Adminisztrátor!</strong><br /><br />', $options);
+
+      $message['body'][] = t('A rendszer új foglalást rögzített.<br /><br />', $options);
+
+      
+
+      $message['body'][] = $params['message'];
+
+      $message['body'][] = t('<hr/>', $options);
+
+      $message['body'][] = t('Ez egy automatikus üzenet, amit a @site-name weboldal küldött.', array('@site-name' => variable_get('peya1964@gmail.com', '')), $options);
+
+      break;
+
+  }
+
+}
+
+
+
+function simple_booking_mail_send($to,$params) {
+
+
+
+  $module = 'simple_booking';
+
+  $key = 'new_booking';
+
+
+
+  $from = variable_get('peya1964@gmail.com', '');
+
+
+
+  $language = language_default();
+
+  $send = TRUE;
+
+  $result = drupal_mail($module, $key, $to, $language, $params, $from, $send);
+
+  if ($result['result'] == TRUE) {
+
+    drupal_set_message(t('Your message has been sent.'));
+
+  }
+
+  else {
+
+    //drupal_set_message(t('There was a problem sending your message and it was not sent.'), 'error');
+
+  }
+
+
+
+}

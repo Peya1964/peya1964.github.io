@@ -1,0 +1,225 @@
+/* All Responsive
+================================================== */
+	a#navigation-toggle { 
+	   height: 55px; 
+       line-height: 55px; 
+       float: none; 
+       margin: 0; 
+       cursor: pointer; 
+       color: #fff; 
+       padding-left: 35px; 
+       font-weight: 600; 
+       position: relative; 
+       z-index: 9; 
+       text-decoration: none !important; 
+       display: none; 
+    }
+	a#navigation-toggle .fa { margin-right: 10px; }
+	#navigation-toggle { color: #fff; }
+	#navigation-toggle:hover { color: #fff; }
+	#sidr-main { 
+	   position: absolute; 
+       position: fixed; 
+       top: 0; 
+       height: 100%; 
+       z-index: 999999; 
+       width: 320px; 
+       overflow-x: none; 
+       overflow-y: auto;
+       font-size: 15px;
+        background: #004d40; 
+        color: #fff; 
+    }
+	#sidr-main { padding: 50px 30px 30px; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; }
+	.sidr.right { left: auto; right: -320px; }
+	.sidr.left { left: -320px; right: auto; }
+	#sidr-main a { 
+	   color: #fff; 
+    }
+	#sidr-main a:hover { 
+	   background:#00695c;
+	   color: #fff; 
+    }
+	#sidr-main ul a { 
+	   display: block; 
+       border-bottom: 1px solid #222; 
+       border-bottom: 1px solid rgba(255,255,255,0.15); 
+       padding:5px 10px; 
+    }
+    #sidr-main ul{
+        list-style:none;
+        margin:0;
+    }
+    #sidr-main ul li{
+        list-style:none;
+        
+    }
+	#sidr-main ul li ul { margin-left: 0; margin: 0; }
+	#sidr-main ul li ul li a { padding-left: 10px; }
+	#sidr-main ul li ul li li a { padding-left: 20px; }
+	#sidr-main ul li ul li li li a { padding-left: 30px; }
+	#sidr-main ul li ul li a:before { content: '\f0da'; display: inline-block; -webkit-font-smoothing: antialiased; font-family: 'FontAwesome'; color: #333; margin-right: 10px; }
+	.sidr-class-toggle-sidr-close:before { font-size: 16px; position: absolute; top: 15px; left: 30px; content: '\f00d'; font-family: 'FontAwesome'; color: #fff; margin: 0; }
+    
+    #sidr-id-block-locale-language ul{
+        text-align:center;
+    }
+
+    .sidr-class-block{
+        margin-top:1em;
+    }
+    
+    .sidr-class-block h2{
+        font-size:20px;
+        text-transform:uppercase;
+        padding-bottom:5px;
+        margin-bottom:10px;
+        border-bottom:1px solid #fff;
+    }
+
+    #sidr-id-block-locale-language ul li{
+        display:inline-block;
+        max-width:60px;
+        
+    }
+    
+    #sidr-id-block-locale-language ul a {
+            border-bottom: 0px solid #222;
+        border-bottom: 0px solid rgba(255,255,255,0.15);
+    }
+
+@media only screen and (max-width: 1100px) {
+
+    .region-booking .bx-wrapper{
+        max-width:80%!important;
+        margin:0 auto;
+    }
+    
+}
+
+
+
+
+@media only screen and (max-width: 959px) {
+	a#navigation-toggle { display: block; }
+	#site-navigation #main-menu > ul { display: none; }
+    
+    .menu-icon{
+        display:none;    
+    }
+    
+    #intro .section-content{
+        text-align:center;
+    }
+    
+    #intro .section-content .ghost-button {
+      margin-top: 5vh;
+      width: 80%;
+      display: inline-block;
+      text-align: center;
+    }
+
+	#prices table{ 
+		display: block; 
+        max-width:100%;    
+        overflow-x: scroll;    
+	}
+    
+    #prices table td{
+        min-width:150px;
+    }
+	
+    .region-booking .bx-wrapper{
+        max-width:70%!important;
+        margin:0 auto;
+    }
+    
+}
+
+/* Tablet (Portrait)
+================================================== */
+@media only screen and (min-width: 768px) and (max-width: 959px) {
+	.container { max-width: 85%; }
+	.left-content { width: 60%; }
+	.sidebar-container { width: 36%; }
+}
+
+/* Tablet (Portrait)
+================================================== */
+@media only screen and (max-width: 959px) {
+    
+    .user-menu{
+        display:none;    
+    }
+
+}
+
+
+/* Mobile (Portrait & Landscape)
+================================================== */
+@media only screen and (max-width: 767px) {
+	.container { max-width: 100%; width: 100%; }
+	.sidebar-container,
+	.left-content { width: 100%; }
+	.sidebar-container {margin-top: 40px; padding-top: 40px; border-top: 10px solid #eee; }
+	.col{ width: 100%; margin-left: 0; margin-bottom: 25px; }
+	#wrap { margin-top: 0; margin-bottom: 0; }
+
+    .contact-data-left{
+        margin:1% 1% 1% 1%;
+        padding:0;
+        width:98%;
+        float:none;
+        display:inline-block;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;  
+        box-sizing: border-box;  
+    }
+    
+    .contact-data-right{
+        margin:1% 1% 1% 1%;
+        padding:0;
+        width:98%;
+        float:none;
+        border-top:2px solid #aaa;
+        padding-top:1em;  
+        border-left:0px solid #aaa;
+          
+    }
+    
+    #contact {
+      text-align: center;
+    }
+    
+    .region-booking .bx-wrapper{
+        max-width:70%!important;
+        margin:0 auto;
+    }    
+
+    .intro-title {
+        padding-top: 5vh;
+        margin-bottom: 5vh;
+    }
+
+    #intro .section-content {
+	 margin: 10px auto;
+    }
+
+    
+}
+/* Mobile (Landscape)
+================================================== */
+@media only screen and (min-width: 480px) and (max-width: 767px) {
+	.sidr { width: 480px; }
+	.sidr.right { right: -480px; }
+}
+
+@media only screen and max-width: 480px{
+
+    .intro-title {
+        padding-top: 2vh;
+        margin-bottom: 2vh;
+    }
+
+}
+
